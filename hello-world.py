@@ -3,6 +3,7 @@ from proton import Message
 from proton.handlers import MessagingHandler
 from proton.reactor import Container
 
+
 class Send(MessagingHandler):
     def __init__(self, url, messages):
         super(Send, self).__init__()

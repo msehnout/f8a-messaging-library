@@ -11,9 +11,9 @@ class MyListener(stomp.ConnectionListener):
 hosts = [('localhost', 61613)]
 
 conn = stomp.Connection(host_and_ports=hosts)
-conn.set_listener('', MyListener())
 conn.start()
 conn.connect('admin', 'admin', wait=True,headers = {'client-id': 'clientname'} )
+conn.set_listener('', MyListener())
 conn.subscribe(destination='/topic/test', id=1, ack='auto',headers = {'subscription-type': 'MULTICAST','durable-subscription-name':'someValue2'})
 #conn.subscribe({destination=config['/topic/test'], ack:'auto', 'activemq.subscriptionName':'SampleSubscription'})
 #conn.subscribe(destination='/topic/testTopic', ack='auto', headers = {'activemq.subscriptionName': 'myhostname'})

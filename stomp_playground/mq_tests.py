@@ -17,3 +17,17 @@ def test_pub_sub():
     producer.publish(msg)
     received_msg = consumer.next_message()
     assert received_msg == msg
+
+
+def test_req_res():
+    def cb(user_input):
+        if user_input == "1+1":
+            return "2"
+        else:
+            return "error"
+
+    _ = mq.MqRpcCallee('/calc', cb)
+    resp = mq.MqRpcCaller.call('/calc', '1+1')
+    assert resp == "2"
+    resp = mq.MqRpcCaller.call('/calc', '1+2')
+    assert resp == "error"

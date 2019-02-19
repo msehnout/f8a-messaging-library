@@ -21,7 +21,8 @@ They can be either synchronous or asynchronous (callback based).
 
 The configuration is based on environment variable because I want to deploy
 the library into OpenShift (Kubernetes) and I don't want to deal with
-configuration in the code.
+configuration in the code. It also hides a lot of configuration options
+and exposes only one way to interface with the messaging infrastructure.
 
 ### Example
 

@@ -19,36 +19,36 @@ STOMP_PASSWORD = os.environ.get('STOMP_PASSWORD', 'password')
 STOMP_SERVER = os.environ.get('STOMP_SERVER', 'localhost')
 
 
-class MqError(Exception):
+class MbError(Exception):
     pass
 
 
-class BrokerConnectionError(MqError):
+class BrokerConnectionError(MbError):
     pass
 
 
-class MqChannelType(Enum):
+class MbChannelType(Enum):
     TOPIC = 1
     QUEUE = 2
     RPC = 3
 
 
 def _construct_path(channel_type, path):
-    # type: (MqChannelType, str) -> str
+    # type: (MbChannelType, str) -> str
     """Create a path string from the input parameters"""
     if path.startswith('/'):
         path = path[1:]
-    if channel_type == MqChannelType.TOPIC:
+    if channel_type == MbChannelType.TOPIC:
         return "/topic/" + path
-    elif channel_type == MqChannelType.QUEUE:
+    elif channel_type == MbChannelType.QUEUE:
         return "/queue/" + path
-    elif channel_type == MqChannelType.RPC:
+    elif channel_type == MbChannelType.RPC:
         return "/temp-queue/" + path
     else:
-        raise MqError
+        raise MbError
 
 
-class _MqConnector:
+class _MbConnector:
     """Base class for all connections."""
 
     def __init__(self):
@@ -64,13 +64,13 @@ class _MqConnector:
             raise BrokerConnectionError
 
 
-class MqProducer(_MqConnector):
+class MbProducer(_MbConnector):
     """Use this class to publish messages to the broker."""
 
     def __init__(self, channel_type, path):
-        # type: (MqChannelType, str) -> None
+        # type: (MbChannelType, str) -> None
         """Create new producer and acquire connection to the broker."""
-        super(MqProducer, self).__init__()
+        super(MbProducer, self).__init__()
         self.path = _construct_path(channel_type, path)
 
     def publish(self, message):
@@ -92,18 +92,18 @@ class _StompListener(stomp.ConnectionListener):
         self.queue.put(message)
 
 
-class MqConsumer(_MqConnector):
+class MbConsumer(_MbConnector):
     """Use this class to get messages from the broker in a blocking (synchronized) way."""
 
     def __init__(self, channel_type, path):
-        # type: (MqChannelType, str) -> None
+        # type: (MbChannelType, str) -> None
         """Create new consumer. By default it is durable and requires ACK on messages."""
-        super(MqConsumer, self).__init__()
+        super(MbConsumer, self).__init__()
         self.queue = Queue()
         self.path = _construct_path(channel_type, path)
 
         headers = dict()
-        if channel_type == MqChannelType.TOPIC:
+        if channel_type == MbChannelType.TOPIC:
             headers['subscription-type'] = 'MULTICAST'
             headers['durable-subscription-name'] = 'alefjaefli' # TODO: <--
 
@@ -114,7 +114,7 @@ class MqConsumer(_MqConnector):
                                       ack='auto',
                                       headers=headers)
         except StompException:
-            raise MqError
+            raise MbError
 
     def next_message(self):
         # type: () -> str
@@ -128,7 +128,7 @@ class MqConsumer(_MqConnector):
         """Acknowledge a message."""
 
 
-class MqRpcCaller:
+class MbRpcCaller:
     """Call a remote function and block until its result is available."""
 
     @staticmethod
@@ -141,9 +141,9 @@ class MqRpcCaller:
         will wait for the response and return it.
         """
         return_path = "foobarbaz" # TODO: <--
-        connector = MqConsumer(MqChannelType.RPC, return_path)
+        connector = MbConsumer(MbChannelType.RPC, return_path)
         connector.connection.send(body=request,
-                                  destination=_construct_path(MqChannelType.QUEUE, path),
+                                  destination=_construct_path(MbChannelType.QUEUE, path),
                                   headers={
                                       'reply-to': connector.path
                                   })
@@ -171,18 +171,18 @@ class _StompRpcCallee(stomp.ConnectionListener):
             pass  # TODO: <--
 
 
-class MqRpcCallee(_MqConnector):
+class MbRpcCallee(_MbConnector):
     """Define a RPC callee."""
 
     def __init__(self, path, callback):
         # type: (str, Callable[[str], str]) -> None
         """New callee."""
-        super(MqRpcCallee, self).__init__()
-        self.path = _construct_path(MqChannelType.QUEUE, path)
+        super(MbRpcCallee, self).__init__()
+        self.path = _construct_path(MbChannelType.QUEUE, path)
         try:
             self.connection.set_listener('', _StompRpcCallee(self.connection, callback))
             self.connection.subscribe(destination=self.path,
                                       id='10'  # TODO: randomize
                                       )
         except StompException:
-            raise MqError
+            raise MbError

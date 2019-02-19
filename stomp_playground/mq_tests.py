@@ -31,3 +31,14 @@ def test_req_res():
     assert resp == "2"
     resp = mq.MqRpcCaller.call('/calc', '1+2')
     assert resp == "error"
+
+
+def test_push_pull():
+    queue_name = "test"
+    consumer = mq.MqConsumer(mq.MqChannelType.QUEUE, queue_name)
+    producer = mq.MqProducer(mq.MqChannelType.QUEUE, queue_name)
+    for i in range(10):
+        producer.publish(str(i))
+
+    for i in range(10):
+        assert i == int(consumer.next_message())

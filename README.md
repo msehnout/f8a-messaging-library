@@ -43,6 +43,8 @@ received_msg = consumer.next_message()
 assert received_msg == msg
 ```
 
+Find more examples [here](tests/test_lib.py).
+
 ### Testing
 
 To try it locally, run the broker first:

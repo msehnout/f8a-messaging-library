@@ -8,6 +8,12 @@ import mb
 
 
 def test_pub_sub():
+    """
+    Test publish-subscribe
+
+    Create a blocking consumer and a producer. Produce a message and read it from the topic.
+    TODO: ACK the message
+    """
     topic_name = "test"
     consumer = mb.MbConsumer(mb.MbChannelType.TOPIC, topic_name)
     producer = mb.MbProducer(mb.MbChannelType.TOPIC, topic_name)
@@ -19,6 +25,12 @@ def test_pub_sub():
 
 
 def test_req_res():
+    """
+    Test request-response
+
+    Create a callback function for the asynchronous callee and register it. Then create a caller
+    and invoke the function over the message bus.
+    """
     def cb(user_input):
         if user_input == "1+1":
             return "2"
@@ -33,6 +45,14 @@ def test_req_res():
 
 
 def test_push_pull():
+    """
+    Test push-pull
+
+    This time create a queue. In a loop push a list of numbers into the queue and on the other side
+    just read them all.
+
+    TODO: ACK
+    """
     queue_name = "test"
     consumer = mb.MbConsumer(mb.MbChannelType.QUEUE, queue_name)
     producer = mb.MbProducer(mb.MbChannelType.QUEUE, queue_name)

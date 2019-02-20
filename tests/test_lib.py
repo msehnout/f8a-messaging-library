@@ -3,8 +3,9 @@ Test cases for the mq library.
 
 These should approximately cover the intended use cases.
 """
-import time
 import mb
+import multiprocessing
+import time
 
 
 def test_pub_sub():
@@ -61,3 +62,48 @@ def test_push_pull():
 
     for i in range(10):
         assert i == int(consumer.next_message())
+
+
+def test_durability():
+    """Test durable subscription."""
+    topic_name = "durability_test"
+    testing_msg = "ahoj123"
+
+    def create_consumer():
+        nonlocal topic_name
+        consumer = mb.MbConsumer(mb.MbChannelType.TOPIC,
+                                 topic_name,
+                                 durable_subscription_name="durability_test_123456")
+        return consumer
+
+    def just_create_it_and_do_nothing():
+        consumer = create_consumer()
+        while True:
+            time.sleep(10)
+
+    def read_msg_and_check_it():
+        nonlocal testing_msg
+        consumer = create_consumer()
+        assert consumer.next_message() == testing_msg
+
+    p = multiprocessing.Process(target=just_create_it_and_do_nothing)
+    p.start()
+    time.sleep(5)
+    p.terminate()
+    p.join()
+    time.sleep(10)
+
+    producer = mb.MbProducer(mb.MbChannelType.TOPIC, topic_name)
+    producer.publish(testing_msg)
+    time.sleep(1)
+
+    p = multiprocessing.Process(target=read_msg_and_check_it)
+    p.start()
+    p.join(5)
+
+    if p.is_alive():
+        p.terminate()
+        p.join()
+        assert False
+
+test_durability()

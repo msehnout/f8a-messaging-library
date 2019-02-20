@@ -4,6 +4,7 @@ Provides unified access to our messaging infrastructure.
 Use only this library to interface with our messaging infrastructure, so that we can easily
 make changes in the infrastructure and fix code only in one place.
 """
+import logging
 import os
 import stomp
 
@@ -14,6 +15,9 @@ from typing import Callable
 from queue import Queue
 
 
+logger = logging.getLogger('mblib')
+
+RAND_RANGE = 1000000
 STOMP_USER = os.environ.get('STOMP_USER', 'admin')
 STOMP_PASSWORD = os.environ.get('STOMP_PASSWORD', 'password')
 STOMP_SERVER = os.environ.get('STOMP_SERVER', 'localhost')
@@ -38,30 +42,41 @@ def _construct_path(channel_type, path):
     """Create a path string from the input parameters"""
     if path.startswith('/'):
         path = path[1:]
-    if channel_type == MbChannelType.TOPIC:
-        return "/topic/" + path
-    elif channel_type == MbChannelType.QUEUE:
-        return "/queue/" + path
-    elif channel_type == MbChannelType.RPC:
-        return "/temp-queue/" + path
-    else:
+
+    mapping = {
+        MbChannelType.TOPIC: "/topic/" + path,
+        MbChannelType.QUEUE: "/queue/" + path,
+        MbChannelType.RPC: "/temp-queue/" + path
+    }
+
+    try:
+        return mapping[channel_type]
+    except KeyError:
         raise MbError
 
 
 class _MbConnector:
     """Base class for all connections."""
 
-    def __init__(self):
+    def __init__(self, client_id=None):
         """Construct common connection parameters."""
         try:
             self.connection = stomp.Connection(host_and_ports=[(STOMP_SERVER, 61613)])
+            if client_id is not None:
+                self.client_id = "client_" + client_id
+            else:
+                self.client_id = "client_" + str(randrange(RAND_RANGE))
+
             self.connection.connect(STOMP_USER, STOMP_PASSWORD,
                                     wait=True,
                                     headers={
-                                        'client-id': 'clientname' # TODO: <- again, put sth better
+                                        'client-id': self.client_id
                                     })
         except StompException:
             raise BrokerConnectionError
+
+    def disconnect(self):
+        self.connection.disconnect()
 
 
 class MbProducer(_MbConnector):
@@ -86,7 +101,7 @@ class _StompListener(stomp.ConnectionListener):
         self.queue = queue
 
     def on_error(self, headers, message):
-        print('received an error "%s"' % message)
+        logger.error('received an error "%s"' % message)
 
     def on_message(self, headers, message):
         self.queue.put(message)
@@ -95,22 +110,28 @@ class _StompListener(stomp.ConnectionListener):
 class MbConsumer(_MbConnector):
     """Use this class to get messages from the broker in a blocking (synchronized) way."""
 
-    def __init__(self, channel_type, path):
-        # type: (MbChannelType, str) -> None
-        """Create new consumer. By default it is durable and requires ACK on messages."""
-        super(MbConsumer, self).__init__()
+    def __init__(self, channel_type, path, durable_subscription_name=None):
+        # type: (MbChannelType, str, str) -> None
+        """Create new consumer.
+
+        You can choose whether you want to listen on a topic or poll a queue. If you want your
+        subscription to be durable, specify the name in arguments.
+        """
+        super(MbConsumer, self).__init__(client_id=durable_subscription_name)
         self.queue = Queue()
         self.path = _construct_path(channel_type, path)
 
         headers = dict()
         if channel_type == MbChannelType.TOPIC:
             headers['subscription-type'] = 'MULTICAST'
-            headers['durable-subscription-name'] = 'alefjaefli' # TODO: <--
+
+            if durable_subscription_name is not None:
+                headers['durable-subscription-name'] = durable_subscription_name
 
         try:
             self.connection.set_listener('', _StompListener(self.queue))
             self.connection.subscribe(destination=self.path,
-                                      id=str(randrange(100000)),
+                                      id="id" + str(randrange(RAND_RANGE)),
                                       ack='auto',
                                       headers=headers)
         except StompException:
@@ -140,7 +161,7 @@ class MbRpcCaller:
         This will enqueue the request and create a temporary queue for the response. Then it
         will wait for the response and return it.
         """
-        return_path = "foobarbaz" # TODO: <--
+        return_path = "return_queue_" + str(randrange(RAND_RANGE))
         connector = MbConsumer(MbChannelType.RPC, return_path)
         connector.connection.send(body=request,
                                   destination=_construct_path(MbChannelType.QUEUE, path),
@@ -159,16 +180,16 @@ class _StompRpcCallee(stomp.ConnectionListener):
         self.cb = cb
 
     def on_error(self, headers, message):
-        print('received an error "%s"' % message)
+        logger.error('received an error "%s"' % message)
 
     def on_message(self, headers, message):
         ret = self.cb(message)
         try:
             self.connection.send(body=ret, destination=headers['reply-to'])
         except KeyError:
-            pass  # TODO: <--
+            logger.error("There is no destination to reply to.")
         except StompException:
-            pass  # TODO: <--
+            logger.error("stomp.py failed")
 
 
 class MbRpcCallee(_MbConnector):
@@ -182,7 +203,7 @@ class MbRpcCallee(_MbConnector):
         try:
             self.connection.set_listener('', _StompRpcCallee(self.connection, callback))
             self.connection.subscribe(destination=self.path,
-                                      id='10'  # TODO: randomize
+                                      id="id" + str(randrange(RAND_RANGE))
                                       )
         except StompException:
             raise MbError

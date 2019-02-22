@@ -13,7 +13,6 @@ def test_pub_sub():
     Test publish-subscribe
 
     Create a blocking consumer and a producer. Produce a message and read it from the topic.
-    TODO: ACK the message
     """
     topic_name = "test"
     consumer = mb.MbConsumer(mb.MbChannelType.TOPIC, topic_name)
@@ -21,7 +20,7 @@ def test_pub_sub():
     time.sleep(1.0)
     msg = "hello, world!"
     producer.publish(msg)
-    received_msg = consumer.next_message()
+    received_msg = consumer.next_message().content
     assert received_msg == msg
 
 
@@ -51,8 +50,6 @@ def test_push_pull():
 
     This time create a queue. In a loop push a list of numbers into the queue and on the other side
     just read them all.
-
-    TODO: ACK
     """
     queue_name = "test"
     consumer = mb.MbConsumer(mb.MbChannelType.QUEUE, queue_name)
@@ -61,7 +58,7 @@ def test_push_pull():
         producer.publish(str(i))
 
     for i in range(10):
-        assert i == int(consumer.next_message())
+        assert i == int(consumer.next_message().content)
 
 
 def test_durability():
@@ -84,7 +81,7 @@ def test_durability():
     def read_msg_and_check_it():
         nonlocal testing_msg
         consumer = create_consumer()
-        assert consumer.next_message() == testing_msg
+        assert consumer.next_message().content == testing_msg
 
     p = multiprocessing.Process(target=just_create_it_and_do_nothing)
     p.start()
@@ -106,4 +103,73 @@ def test_durability():
         p.join()
         assert False
 
-test_durability()
+
+def test_topic_redelivery():
+    """Test durable subscription with redelivery."""
+    topic_name = "redelivery_test"
+    durable_subscription_name = "redelivery_test_123456"
+
+    def create_consumer():
+        consumer = mb.MbConsumer(mb.MbChannelType.TOPIC,
+                                 topic_name,
+                                 durable_subscription_name=durable_subscription_name)
+        return consumer
+
+    def cleanup_subscription():
+        consumer = create_consumer()
+        while True:
+            msg = consumer.next_message()
+            consumer.ack_message(msg.id)
+
+    def consume_half_of_the_messages():
+        consumer = create_consumer()
+
+        for i in range(0, 5):
+            msg = consumer.next_message()
+            assert str(i) == msg.content
+            consumer.ack_message(msg.id)
+
+        for i in range(5, 10):
+            msg = consumer.next_message()
+            assert str(i) == msg.content
+
+        while True:
+            time.sleep(10)
+
+    def consume_rest():
+        consumer = create_consumer()
+
+        for i in range(5, 10):
+            msg = consumer.next_message()
+            assert str(i) == msg.content
+            consumer.ack_message(msg.id)
+
+    p = multiprocessing.Process(target=cleanup_subscription)
+    p.start()
+    time.sleep(5)
+    p.terminate()
+    p.join()
+
+    p = multiprocessing.Process(target=consume_half_of_the_messages)
+    p.start()
+
+    producer = mb.MbProducer(mb.MbChannelType.TOPIC, topic_name)
+    for i in range(0, 10):
+        producer.publish(str(i))
+
+    time.sleep(5)
+    if not p.is_alive():
+        assert False
+
+    p.terminate()
+    p.join()
+    time.sleep(10)
+
+    p = multiprocessing.Process(target=consume_rest)
+    p.start()
+    p.join(5)
+
+    if p.is_alive():
+        p.terminate()
+        p.join()
+        assert False

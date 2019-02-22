@@ -55,6 +55,13 @@ def _construct_path(channel_type, path):
         raise MbError
 
 
+class MbMessage:
+
+    def __init__(self, msg_id=None, content=None):
+        self.id = msg_id
+        self.content = content
+
+
 class _MbConnector:
     """Base class for all connections."""
 
@@ -104,7 +111,7 @@ class _StompListener(stomp.ConnectionListener):
         logger.error('received an error "%s"' % message)
 
     def on_message(self, headers, message):
-        self.queue.put(message)
+        self.queue.put((headers, message))
 
 
 class MbConsumer(_MbConnector):
@@ -122,31 +129,39 @@ class MbConsumer(_MbConnector):
         self.path = _construct_path(channel_type, path)
 
         headers = dict()
+        ack_type = 'auto'
+        self.subscription_id = "id" + str(randrange(RAND_RANGE))
         if channel_type == MbChannelType.TOPIC:
             headers['subscription-type'] = 'MULTICAST'
 
             if durable_subscription_name is not None:
                 headers['durable-subscription-name'] = durable_subscription_name
+                ack_type = 'client'
+                self.subscription_id = "subs_id" + durable_subscription_name
 
         try:
             self.connection.set_listener('', _StompListener(self.queue))
             self.connection.subscribe(destination=self.path,
-                                      id="id" + str(randrange(RAND_RANGE)),
-                                      ack='auto',
+                                      id=self.subscription_id,
+                                      ack=ack_type,
                                       headers=headers)
         except StompException:
             raise MbError
 
     def next_message(self):
-        # type: () -> str
+        # type: () -> MbMessage
         """Wait for the next message."""
-        ret = self.queue.get()
+        headers, content = self.queue.get()
         self.queue.task_done()
-        return ret
+        try:
+            return MbMessage(msg_id=headers['message-id'], content=content)
+        except KeyError:
+            MbMessage(content=content)
 
     def ack_message(self, msg_id):
         # type: (str) -> None
         """Acknowledge a message."""
+        self.connection.ack(msg_id, self.subscription_id)
 
 
 class MbRpcCaller:
@@ -169,7 +184,7 @@ class MbRpcCaller:
                                       'reply-to': connector.path
                                   })
 
-        return connector.next_message()
+        return connector.next_message().content
 
 
 class _StompRpcCallee(stomp.ConnectionListener):

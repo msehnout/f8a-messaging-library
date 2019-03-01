@@ -1,7 +1,14 @@
 import mb
 import time
+import logging
+import os
+
+logger = logging.getLogger(__file__)
+LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+logging.basicConfig(level=LOGLEVEL)
 
 
+logging.info("starting")
 time.sleep(5)
 print("stub I")
 topic_name = "release-monitoring"

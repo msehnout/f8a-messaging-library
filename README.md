@@ -1,6 +1,4 @@
-# AMQ Deployment and use cases
-
-## Part I: Message bus library
+# Message Bus (MB) library
 
 A Python library for interfacing with a message broker. It should be 
 compatible with anything based on ActiveMQ like AmazonMQ or Red Hat
@@ -45,6 +43,18 @@ assert received_msg == msg
 ```
 
 Find more examples [here](tests/test_lib.py).
+
+### Complex example
+
+Run:
+```text
+$ docker-compose build && docker-compose up
+```
+
+This will spin up example collector and message producer together with a broker.
+From this simulation you can get a gist of how to deploy clients using the library.
+See the `docker-compose.yml` file for configuration. This would be configured in
+an OpenShift template.
 
 ### Testing
 

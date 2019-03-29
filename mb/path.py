@@ -1,3 +1,5 @@
+"""Path generation and utilities."""
+
 from enum import Enum
 
 from mb.error import *

@@ -4,6 +4,7 @@ Provides unified access to our messaging infrastructure.
 Use only this library to interface with our messaging infrastructure, so that we can easily
 make changes in the infrastructure and fix code only in one place.
 """
+
 import json
 import logging
 

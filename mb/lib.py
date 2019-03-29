@@ -4,62 +4,41 @@ Provides unified access to our messaging infrastructure.
 Use only this library to interface with our messaging infrastructure, so that we can easily
 make changes in the infrastructure and fix code only in one place.
 """
+import json
 import logging
-import os
+
 import stomp
 
-from enum import Enum
+
 from random import randrange
 from stomp.exception import StompException
-from typing import Callable
+from typing import Callable, List
 from queue import Queue
 
+from mb.error import *
+from mb.config import *
+from mb.path import *
+
+RAND_RANGE = 1000000
 
 logger = logging.getLogger('mblib')
 
-RAND_RANGE = 1000000
-STOMP_USER = os.environ.get('STOMP_USER', 'admin')
-STOMP_PASSWORD = os.environ.get('STOMP_PASSWORD', 'password')
-STOMP_SERVER = os.environ.get('STOMP_SERVER', 'localhost')
-
-
-class MbError(Exception):
-    pass
-
-
-class BrokerConnectionError(MbError):
-    pass
-
-
-class MbChannelType(Enum):
-    TOPIC = 1
-    QUEUE = 2
-    RPC = 3
-
-
-def _construct_path(channel_type, path):
-    # type: (MbChannelType, str) -> str
-    """Create a path string from the input parameters"""
-    if path.startswith('/'):
-        path = path[1:]
-
-    mapping = {
-        MbChannelType.TOPIC: "/topic/" + path,
-        MbChannelType.QUEUE: "/queue/" + path,
-        MbChannelType.RPC: "/temp-queue/" + path
-    }
-
-    try:
-        return mapping[channel_type]
-    except KeyError:
-        raise MbError
-
 
 class MbMessage:
+    """Encapsulates a message content and metadata."""
 
-    def __init__(self, msg_id=None, content=None):
-        self.id = msg_id
+    def __init__(self, msg_id=None, content=None, path=None):
+        """Create new message."""
         self.content = content
+        self.id = msg_id
+        self.path = path
+
+    def dict(self):
+        """Try to parse the content as a JSON object."""
+        try:
+            return json.loads(self.content)
+        except json.JSONDecodeError:
+            return {}
 
 
 class _MbConnector:
@@ -93,7 +72,7 @@ class MbProducer(_MbConnector):
         # type: (MbChannelType, str) -> None
         """Create new producer and acquire connection to the broker."""
         super(MbProducer, self).__init__()
-        self.path = _construct_path(channel_type, path)
+        self.path = construct_path(channel_type, path)
 
     def publish(self, message):
         # type: (str) -> None
@@ -117,8 +96,9 @@ class _StompListener(stomp.ConnectionListener):
 class MbConsumer(_MbConnector):
     """Use this class to get messages from the broker in a blocking (synchronized) way."""
 
-    def __init__(self, channel_type, path, durable_subscription_name=None):
-        # type: (MbChannelType, str, str) -> None
+    # def __init__(self, channel_type, path, durable_subscription_name=None):
+    def __init__(self, listen_on, durable_subscription_name=None):
+        # type: (List[(MbChannelType, str)], str) -> None
         """Create new consumer.
 
         You can choose whether you want to listen on a topic or poll a queue. If you want your
@@ -126,27 +106,29 @@ class MbConsumer(_MbConnector):
         """
         super(MbConsumer, self).__init__(client_id=durable_subscription_name)
         self.queue = Queue()
-        self.path = _construct_path(channel_type, path)
 
-        headers = dict()
-        ack_type = 'auto'
-        self.subscription_id = "id" + str(randrange(RAND_RANGE))
-        if channel_type == MbChannelType.TOPIC:
-            headers['subscription-type'] = 'MULTICAST'
+        for channel_type, path in listen_on:
+            self.path = construct_path(channel_type, path)
 
-            if durable_subscription_name is not None:
-                headers['durable-subscription-name'] = durable_subscription_name
-                ack_type = 'client'
-                self.subscription_id = "subs_id" + durable_subscription_name
+            headers = dict()
+            ack_type = 'auto'
+            self.subscription_id = "id" + str(randrange(RAND_RANGE))
+            if channel_type == MbChannelType.TOPIC:
+                headers['subscription-type'] = 'MULTICAST'
 
-        try:
-            self.connection.set_listener('', _StompListener(self.queue))
-            self.connection.subscribe(destination=self.path,
-                                      id=self.subscription_id,
-                                      ack=ack_type,
-                                      headers=headers)
-        except StompException:
-            raise MbError
+                if durable_subscription_name is not None:
+                    headers['durable-subscription-name'] = durable_subscription_name
+                    ack_type = 'client'
+                    self.subscription_id = "subs_id" + durable_subscription_name
+
+            try:
+                self.connection.set_listener('', _StompListener(self.queue))
+                self.connection.subscribe(destination=self.path,
+                                          id=self.subscription_id,
+                                          ack=ack_type,
+                                          headers=headers)
+            except StompException:
+                raise MbError
 
     def next_message(self):
         # type: () -> MbMessage
@@ -154,7 +136,7 @@ class MbConsumer(_MbConnector):
         headers, content = self.queue.get()
         self.queue.task_done()
         try:
-            return MbMessage(msg_id=headers['message-id'], content=content)
+            return MbMessage(msg_id=headers['message-id'], content=content, path=headers['destination'])
         except KeyError:
             MbMessage(content=content)
 
@@ -177,9 +159,9 @@ class MbRpcCaller:
         will wait for the response and return it.
         """
         return_path = "return_queue_" + str(randrange(RAND_RANGE))
-        connector = MbConsumer(MbChannelType.RPC, return_path)
+        connector = MbConsumer([(MbChannelType.RPC, return_path)])
         connector.connection.send(body=request,
-                                  destination=_construct_path(MbChannelType.QUEUE, path),
+                                  destination=construct_path(MbChannelType.QUEUE, path),
                                   headers={
                                       'reply-to': connector.path
                                   })
@@ -214,7 +196,7 @@ class MbRpcCallee(_MbConnector):
         # type: (str, Callable[[str], str]) -> None
         """New callee."""
         super(MbRpcCallee, self).__init__()
-        self.path = _construct_path(MbChannelType.QUEUE, path)
+        self.path = construct_path(MbChannelType.QUEUE, path)
         try:
             self.connection.set_listener('', _StompRpcCallee(self.connection, callback))
             self.connection.subscribe(destination=self.path,

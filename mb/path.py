@@ -34,3 +34,18 @@ def construct_path(channel_type, path):
     except KeyError:
         raise MbError
 
+
+class ConnectionPath:
+    """Encapsulates connection path into typed object as opposed to plain string."""
+
+    def __init__(self, type, path):
+        """Create a connection path."""
+        self.path = construct_path(type, path)
+        self.type = type
+
+    def as_tuple(self):
+        return self.type, self.path
+
+
+TOPIC_RELEASE_MONITORING_PYPI = ConnectionPath(MbChannelType.TOPIC, "release-monitoring/pypi")
+TOPIC_RELEASE_MONITORING_NPM = ConnectionPath(MbChannelType.TOPIC, "release-monitoring/npm")

@@ -15,8 +15,8 @@ def test_pub_sub():
     Create a blocking consumer and a producer. Produce a message and read it from the topic.
     """
     topic_name = "test"
-    consumer = mb.MbConsumer([(mb.MbChannelType.TOPIC, topic_name)])
-    producer = mb.MbProducer(mb.MbChannelType.TOPIC, topic_name)
+    consumer = mb.MbConsumer([mb.ConnectionPath(mb.MbChannelType.TOPIC, topic_name)])
+    producer = mb.MbProducer(mb.ConnectionPath(mb.MbChannelType.TOPIC, topic_name))
     time.sleep(1.0)
     msg = "hello, world!"
     producer.publish(msg)
@@ -26,11 +26,15 @@ def test_pub_sub():
 
 def test_multiple_pub_single_sub():
     """Test publish-subscribe for multiple publishers and a single consumer."""
-    producers = [mb.MbProducer(mb.MbChannelType.TOPIC, "mpss1"), mb.MbProducer(mb.MbChannelType.TOPIC, "mpss2"),
-                 mb.MbProducer(mb.MbChannelType.TOPIC, "mpss3"), mb.MbProducer(mb.MbChannelType.TOPIC, "mpss4")]
+    producers = [mb.MbProducer(mb.ConnectionPath(mb.MbChannelType.TOPIC, "mpss1")),
+                 mb.MbProducer(mb.ConnectionPath(mb.MbChannelType.TOPIC, "mpss2")),
+                 mb.MbProducer(mb.ConnectionPath(mb.MbChannelType.TOPIC, "mpss3")),
+                 mb.MbProducer(mb.ConnectionPath(mb.MbChannelType.TOPIC, "mpss4"))]
     time.sleep(1.0)
-    consumer = mb.MbConsumer([(mb.MbChannelType.TOPIC, "mpss1"), (mb.MbChannelType.TOPIC, "mpss2"),
-                              (mb.MbChannelType.TOPIC, "mpss3"), (mb.MbChannelType.TOPIC, "mpss4")])
+    consumer = mb.MbConsumer([mb.ConnectionPath(mb.MbChannelType.TOPIC, "mpss1"),
+                              mb.ConnectionPath(mb.MbChannelType.TOPIC, "mpss2"),
+                              mb.ConnectionPath(mb.MbChannelType.TOPIC, "mpss3"),
+                              mb.ConnectionPath(mb.MbChannelType.TOPIC, "mpss4")])
     time.sleep(1.0)
 
     for i, p in enumerate(producers):
@@ -72,9 +76,9 @@ def test_push_pull():
     just read them all.
     """
     queue_name = "test"
-    consumer = mb.MbConsumer([(mb.MbChannelType.QUEUE, queue_name)])
+    consumer = mb.MbConsumer([mb.ConnectionPath(mb.MbChannelType.QUEUE, queue_name)])
     time.sleep(1)
-    producer = mb.MbProducer(mb.MbChannelType.QUEUE, queue_name)
+    producer = mb.MbProducer(mb.ConnectionPath(mb.MbChannelType.QUEUE, queue_name))
     for i in range(10):
         producer.publish(str(i))
 
@@ -89,7 +93,7 @@ def test_durability():
 
     def create_consumer():
         nonlocal topic_name
-        consumer = mb.MbConsumer([(mb.MbChannelType.TOPIC,
+        consumer = mb.MbConsumer([mb.ConnectionPath(mb.MbChannelType.TOPIC,
                                  topic_name)],
                                  durable_subscription_name="durability_test_123456")
         return consumer
@@ -111,7 +115,7 @@ def test_durability():
     p.join()
     time.sleep(10)
 
-    producer = mb.MbProducer(mb.MbChannelType.TOPIC, topic_name)
+    producer = mb.MbProducer(mb.ConnectionPath(mb.MbChannelType.TOPIC, topic_name))
     producer.publish(testing_msg)
     time.sleep(1)
 
@@ -131,7 +135,7 @@ def test_topic_redelivery():
     durable_subscription_name = "redelivery_test_123456"
 
     def create_consumer():
-        consumer = mb.MbConsumer([(mb.MbChannelType.TOPIC,
+        consumer = mb.MbConsumer([mb.ConnectionPath(mb.MbChannelType.TOPIC,
                                  topic_name)],
                                  durable_subscription_name=durable_subscription_name)
         return consumer
@@ -174,7 +178,7 @@ def test_topic_redelivery():
     p = multiprocessing.Process(target=consume_half_of_the_messages)
     p.start()
 
-    producer = mb.MbProducer(mb.MbChannelType.TOPIC, topic_name)
+    producer = mb.MbProducer(mb.ConnectionPath(mb.MbChannelType.TOPIC, topic_name))
     for i in range(0, 10):
         producer.publish(str(i))
 

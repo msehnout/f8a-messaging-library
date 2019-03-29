@@ -11,7 +11,7 @@ logging.basicConfig(level=LOGLEVEL)
 time.sleep(20)
 logger.info("collector I")
 topic_name = "release-monitoring"
-consumer = mb.MbConsumer(mb.MbChannelType.TOPIC, topic_name)
+consumer = mb.MbConsumer([])
 statistics = {"npm-updates": 0}
 logger.info("collector II")
 while True:

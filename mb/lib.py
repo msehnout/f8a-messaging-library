@@ -69,11 +69,11 @@ class _MbConnector:
 class MbProducer(_MbConnector):
     """Use this class to publish messages to the broker."""
 
-    def __init__(self, channel_type, path):
-        # type: (MbChannelType, str) -> None
+    def __init__(self, connection_path):
+        # type: (ConnectionPath) -> None
         """Create new producer and acquire connection to the broker."""
         super(MbProducer, self).__init__()
-        self.path = construct_path(channel_type, path)
+        self.path = connection_path.path
 
     def publish(self, message):
         # type: (str) -> None
@@ -99,7 +99,7 @@ class MbConsumer(_MbConnector):
 
     # def __init__(self, channel_type, path, durable_subscription_name=None):
     def __init__(self, listen_on, durable_subscription_name=None):
-        # type: (List[(MbChannelType, str)], str) -> None
+        # type: (List[ConnectionPath], str) -> None
         """Create new consumer.
 
         You can choose whether you want to listen on a topic or poll a queue. If you want your
@@ -108,8 +108,9 @@ class MbConsumer(_MbConnector):
         super(MbConsumer, self).__init__(client_id=durable_subscription_name)
         self.queue = Queue()
 
-        for channel_type, path in listen_on:
-            self.path = construct_path(channel_type, path)
+        for connection_path in listen_on:
+            self.path = connection_path.path
+            channel_type = connection_path.type
 
             headers = dict()
             ack_type = 'auto'
@@ -160,7 +161,7 @@ class MbRpcCaller:
         will wait for the response and return it.
         """
         return_path = "return_queue_" + str(randrange(RAND_RANGE))
-        connector = MbConsumer([(MbChannelType.RPC, return_path)])
+        connector = MbConsumer([ConnectionPath(MbChannelType.RPC, return_path)])
         connector.connection.send(body=request,
                                   destination=construct_path(MbChannelType.QUEUE, path),
                                   headers={

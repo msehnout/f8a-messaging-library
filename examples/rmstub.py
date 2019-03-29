@@ -12,13 +12,13 @@ logging.info("starting")
 time.sleep(21)
 
 for topic in [mb.path.TOPIC_RELEASE_MONITORING_NPM, mb.path.TOPIC_RELEASE_MONITORING_PYPI]:
-    producer = mb.MbProducer(mb.MbChannelType.TOPIC, topic)
+    producer = mb.MbProducer(topic)
     for _ in range(10):
         try:
             msg = '{ "foo": "bar" }'
             producer.publish(msg)
             print("Publishing ...")
-            time.sleep(5)
+            time.sleep(1)
         except KeyboardInterrupt:
             producer.disconnect()
             exit(0)

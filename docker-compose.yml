@@ -14,10 +14,10 @@ services:
     environment:
       - STOMP_SERVER=broker
     entrypoint: python3
-    command: "-m collector_example.rmstub"
+    command: "-m examples.rmstub"
   collector:
     build: .
     environment:
       - STOMP_SERVER=broker
     entrypoint: python3
-    command: "-m collector_example.collector"
+    command: "-m examples.collector"

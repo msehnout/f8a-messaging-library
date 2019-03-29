@@ -9,7 +9,7 @@ logging.basicConfig(level=LOGLEVEL)
 
 
 logging.info("starting")
-time.sleep(5)
+time.sleep(21)
 print("stub I")
 topic_name = "release-monitoring"
 producer = mb.MbProducer(mb.MbChannelType.TOPIC, topic_name)

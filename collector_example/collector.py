@@ -8,7 +8,7 @@ LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
 logging.basicConfig(level=LOGLEVEL)
 
 
-time.sleep(4)
+time.sleep(20)
 logger.info("collector I")
 topic_name = "release-monitoring"
 consumer = mb.MbConsumer(mb.MbChannelType.TOPIC, topic_name)

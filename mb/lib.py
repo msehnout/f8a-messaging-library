@@ -128,7 +128,7 @@ class MbConsumer(_MbConnector):
                 if durable_subscription_name is not None:
                     headers['durable-subscription-name'] = durable_subscription_name
                     ack_type = 'client'
-                    self.subscription_id = "subs_id" + durable_subscription_name
+                    self.subscription_ids[path] = "subs_id" + durable_subscription_name
 
             try:
                 self.connection.subscribe(destination=path,

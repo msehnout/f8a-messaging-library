@@ -98,14 +98,15 @@ class MbConsumer(_MbConnector):
     """Use this class to get messages from the broker in a blocking (synchronized) way."""
 
     # def __init__(self, channel_type, path, durable_subscription_name=None):
-    def __init__(self, listen_on, durable_subscription_name=None):
-        # type: (List[ConnectionPath], str) -> None
+    def __init__(self, listen_on, durable_subscription_names=None):
+        # type: (List[ConnectionPath], [str]) -> None
         """Create new consumer.
 
         You can choose whether you want to listen on a topic or poll a queue. If you want your
         subscription to be durable, specify the name in arguments.
         """
-        super(MbConsumer, self).__init__(client_id=durable_subscription_name)
+        assert len(listen_on) == len(durable_subscription_names)
+        super(MbConsumer, self).__init__(client_id=durable_subscription_names[0])
         self.queue = Queue()
         self.subscription_ids = dict()
 
@@ -115,7 +116,7 @@ class MbConsumer(_MbConnector):
             logger.exception("{}".format(e))
             raise MbError
 
-        for connection_path in listen_on:
+        for connection_path, durable_subscription_name in listen_on, durable_subscription_names:
             path = connection_path.path
             channel_type = connection_path.type
 

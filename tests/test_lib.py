@@ -95,7 +95,7 @@ def test_durability():
         nonlocal topic_name
         consumer = mb.MbConsumer([mb.ConnectionPath(mb.MbChannelType.TOPIC,
                                  topic_name)],
-                                 durable_subscription_name="durability_test_123456")
+                                 durable_subscription_names="durability_test_123456")
         return consumer
 
     def just_create_it_and_do_nothing():
@@ -137,7 +137,7 @@ def test_topic_redelivery():
     def create_consumer():
         consumer = mb.MbConsumer([mb.ConnectionPath(mb.MbChannelType.TOPIC,
                                  topic_name)],
-                                 durable_subscription_name=durable_subscription_name)
+                                 durable_subscription_names=durable_subscription_name)
         return consumer
 
     def cleanup_subscription():

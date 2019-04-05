@@ -9,7 +9,8 @@ logging.basicConfig(level=LOGLEVEL)
 
 
 time.sleep(20)
-consumer = mb.MbConsumer([mb.TOPIC_RELEASE_MONITORING_NPM, mb.TOPIC_RELEASE_MONITORING_PYPI])
+consumer = mb.MbConsumer([mb.TOPIC_RELEASE_MONITORING_NPM, mb.TOPIC_RELEASE_MONITORING_PYPI],
+                         ["ingestion-gateway-npm", "ingestion-gateway-pypi"])
 statistics = {"npm-updates": 0, "pypi-updates": 0}
 while True:
     try:

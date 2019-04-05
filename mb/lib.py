@@ -107,14 +107,21 @@ class MbConsumer(_MbConnector):
         """
         super(MbConsumer, self).__init__(client_id=durable_subscription_name)
         self.queue = Queue()
+        self.subscription_ids = dict()
+
+        try:
+            self.connection.set_listener('', _StompListener(self.queue))
+        except StompException as e:
+            logger.exception("{}".format(e))
+            raise MbError
 
         for connection_path in listen_on:
-            self.path = connection_path.path
+            path = connection_path.path
             channel_type = connection_path.type
 
             headers = dict()
             ack_type = 'auto'
-            self.subscription_id = "id" + str(randrange(RAND_RANGE))
+            self.subscription_ids[path] = "id" + str(randrange(RAND_RANGE))
             if channel_type == MbChannelType.TOPIC:
                 headers['subscription-type'] = 'MULTICAST'
 
@@ -124,12 +131,12 @@ class MbConsumer(_MbConnector):
                     self.subscription_id = "subs_id" + durable_subscription_name
 
             try:
-                self.connection.set_listener('', _StompListener(self.queue))
-                self.connection.subscribe(destination=self.path,
-                                          id=self.subscription_id,
+                self.connection.subscribe(destination=path,
+                                          id=self.subscription_ids[path],
                                           ack=ack_type,
                                           headers=headers)
-            except StompException:
+            except StompException as e:
+                logger.exception("{}".format(e))
                 raise MbError
 
     def next_message(self):
@@ -138,14 +145,19 @@ class MbConsumer(_MbConnector):
         headers, content = self.queue.get()
         self.queue.task_done()
         try:
-            return MbMessage(msg_id=headers['message-id'], content=content, path=headers['destination'])
+            return MbMessage(msg_id=headers['message-id'], content=content,
+                             path=headers['destination'])
         except KeyError:
             MbMessage(content=content)
 
-    def ack_message(self, msg_id):
-        # type: (str) -> None
+    def ack_message(self, msg):
+        # type: (MbMessage) -> None
         """Acknowledge a message."""
-        self.connection.ack(msg_id, self.subscription_id)
+        try:
+            self.connection.ack(msg.id, self.subscription_ids[msg.path])
+        except KeyError:
+            logger.error("Failed to ACK the message with id: {}, subscription path unknown"
+                         .format(msg.id))
 
 
 class MbRpcCaller:
@@ -165,7 +177,7 @@ class MbRpcCaller:
         connector.connection.send(body=request,
                                   destination=construct_path(MbChannelType.QUEUE, path),
                                   headers={
-                                      'reply-to': connector.path
+                                      'reply-to': return_path
                                   })
 
         return connector.next_message().content

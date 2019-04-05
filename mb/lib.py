@@ -28,11 +28,11 @@ logger = logging.getLogger('mblib')
 class MbMessage:
     """Encapsulates a message content and metadata."""
 
-    def __init__(self, msg_id=None, content=None, path=None):
+    def __init__(self, msg_id: str=None, content: str=None, path: str=None):
         """Create new message."""
-        self.content = content
-        self.id = msg_id
-        self.path = path
+        self.content: str = content
+        self.id: str = msg_id
+        self.path: str = path
 
     def dict(self):
         """Try to parse the content as a JSON object."""

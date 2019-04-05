@@ -20,7 +20,7 @@ while True:
         else:
             statistics["npm-updates"] += 1
             logger.info("Report: Detected {} NPM updates".format(statistics["npm-updates"]))
-        consumer.ack_message(msg.id)
+        consumer.ack_message(msg)
     except KeyboardInterrupt:
         consumer.disconnect()
         exit(0)

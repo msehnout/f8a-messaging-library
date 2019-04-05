@@ -116,7 +116,7 @@ class MbConsumer(_MbConnector):
             logger.exception("{}".format(e))
             raise MbError
 
-        for connection_path, durable_subscription_name in listen_on, durable_subscription_names:
+        for connection_path, durable_subscription_name in zip(listen_on, durable_subscription_names):
             path = connection_path.path
             channel_type = connection_path.type
 

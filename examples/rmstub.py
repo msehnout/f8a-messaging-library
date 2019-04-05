@@ -22,7 +22,6 @@ while True:
         print("Publishing ...")
         time.sleep(1)
     except KeyboardInterrupt:
-        producer.disconnect()
+        producer1.disconnect()
+        producer2.disconnect()
         exit(0)
-
-producer.disconnect()

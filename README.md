@@ -24,25 +24,7 @@ and exposes only one way to interface with the messaging infrastructure.
 
 ### Example
 
-Simple pub/sub use case:
-```python
-import time
-import mb
-
-topic_name = "test"
-# Note that no configuration is required because it is done in the
-# OpenShift template therefore it would be redundant to do it here
-consumer = mb.MbConsumer(mb.MbChannelType.TOPIC, topic_name)
-producer = mb.MbProducer(mb.MbChannelType.TOPIC, topic_name)
-time.sleep(1.0)
-msg = "hello, world!"
-producer.publish(msg)
-# This is a blocking consumer, you can consume messages in a loop
-received_msg = consumer.next_message()
-assert received_msg == msg
-```
-
-Find more examples [here](tests/test_lib.py).
+Find examples [here](examples/).
 
 ### Complex example
 

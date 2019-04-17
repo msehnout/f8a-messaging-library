@@ -105,8 +105,12 @@ class MbConsumer(_MbConnector):
         You can choose whether you want to listen on a topic or poll a queue. If you want your
         subscription to be durable, specify the name in arguments.
         """
-        assert len(listen_on) == len(durable_subscription_names)
-        super(MbConsumer, self).__init__(client_id=durable_subscription_names[0])
+        if durable_subscription_names is not None:
+            assert len(listen_on) == len(durable_subscription_names)
+            super(MbConsumer, self).__init__(client_id=durable_subscription_names[0])
+        else:
+            super(MbConsumer, self).__init__()
+            durable_subscription_names = list(map(lambda _: None, listen_on))
         self.queue = Queue()
         self.subscription_ids = dict()
 

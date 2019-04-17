@@ -7,7 +7,7 @@ logger = logging.getLogger(__file__)
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
 logging.basicConfig(level=LOGLEVEL)
 
-QUEUE_TEST1 = mb.ConnectionPath(mb.MbChannelType.QUEUE, "Consumer.aaa.VirtualTopic.test1")
+QUEUE_TEST1 = mb.ConnectionPath(mb.MbChannelType.QUEUE, "Consumer.Aaa.VirtualTopic.test1")
 consumer = mb.MbConsumer([QUEUE_TEST1])
 statistics = {"foo": 0}
 counter = 0

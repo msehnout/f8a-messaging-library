@@ -1,3 +1,8 @@
+# Important note:
+
+Virtual topics work only with ActiveMQ which is the base for Red Hat AMQ 6.
+RH AMQ 7 is based on Artemis which does not support this type of "routing".
+
 # Message Bus (MB) library
 
 A Python library for interfacing with a message broker. It should be 

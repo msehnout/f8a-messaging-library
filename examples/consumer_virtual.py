@@ -6,6 +6,8 @@ import os
 
 logger = logging.getLogger(__file__)
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+FAILURE_RANGE = int(os.environ.get('FAILURE_RANGE', '50'))
+PAUSE_RANGE = int(os.environ.get('PAUSE_RANGE', '20'))
 logging.basicConfig(level=LOGLEVEL)
 
 while True:
@@ -19,9 +21,9 @@ while True:
             logger.info("Received: {}".format(dict))
             statistics['foo'] += 1
             #consumer.ack_message(msg)
-            if random.randrange(20) == 1:
+            if random.randrange(FAILURE_RANGE) == 1:
                 consumer.disconnect()
-                pause = random.randrange(60)
+                pause = random.randrange(PAUSE_RANGE)
                 logger.info("Last seen foo value: {}".format(dict['foo']))
                 logger.error("There was an artificial error. Reconnect in {} seconds.".format(pause))
                 time.sleep(pause)

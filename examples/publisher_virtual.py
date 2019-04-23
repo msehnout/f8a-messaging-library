@@ -18,7 +18,7 @@ while True:
     try:
         msg = '{ "foo": "' + str(counter) + '" }'
         producer.publish(msg)
-        print("Publishing ..." + str(counter))
+        logger.info("Publishing ..." + str(counter))
         time.sleep(5)
         counter += 1
     except KeyboardInterrupt:

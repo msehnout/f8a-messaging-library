@@ -15,7 +15,7 @@ while True:
     try:
         msg = consumer.next_message()
         dict = msg.dict()
-        print("Received: {}".format(dict))
+        logger.info("Received: {}".format(dict))
         statistics['foo'] += 1
         #consumer.ack_message(msg)
         counter += 1

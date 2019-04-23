@@ -20,7 +20,7 @@ while True:
         #consumer.ack_message(msg)
         counter += 1
         if counter % 2 == 0:
-            time.sleep(3)
+            pass # time.sleep(3)
     except KeyError:
         continue
     except KeyboardInterrupt:

@@ -2,7 +2,6 @@ import mb
 import time
 import logging
 import os
-import random
 
 logger = logging.getLogger(__file__)
 LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()

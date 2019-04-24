@@ -2,8 +2,8 @@
 
 from enum import Enum
 
-from mb.error import *
-from mb.config import ENVIRONMENT
+from f8a_mb.error import *
+from f8a_mb.config import ENVIRONMENT
 
 
 class MbChannelType(Enum):

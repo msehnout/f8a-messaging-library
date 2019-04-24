@@ -1,4 +1,4 @@
-import mb
+import f8a_mb
 import time
 import logging
 import os
@@ -12,8 +12,8 @@ logging.basicConfig(level=LOGLEVEL)
 logging.info("starting")
 time.sleep(21)
 
-producer1 = mb.MbProducer(mb.path.TOPIC_RELEASE_MONITORING_NPM)
-producer2 = mb.MbProducer(mb.path.TOPIC_RELEASE_MONITORING_PYPI)
+producer1 = f8a_mb.MbProducer(f8a_mb.path.TOPIC_RELEASE_MONITORING_NPM)
+producer2 = f8a_mb.MbProducer(f8a_mb.path.TOPIC_RELEASE_MONITORING_PYPI)
 while True:
     try:
         producer = random.choice([producer1, producer2])

@@ -18,7 +18,7 @@ def get_requirements():
 
 
 setup(
-    name='f8a-messaging-library',
+    name='f8a_mb',
     version='0.1',
     packages=find_packages(),
     install_requires=get_requirements(),

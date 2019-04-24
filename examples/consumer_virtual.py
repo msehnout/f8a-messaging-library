@@ -1,4 +1,4 @@
-import mb
+import f8a_mb
 import time
 import random
 import logging
@@ -11,8 +11,8 @@ PAUSE_RANGE = int(os.environ.get('PAUSE_RANGE', '20'))
 logging.basicConfig(level=LOGLEVEL)
 
 while True:
-    QUEUE_TEST1 = mb.path.topic_release_monitoring_pypi_get_listener("Aaa")
-    consumer = mb.MbConsumer([QUEUE_TEST1])
+    QUEUE_TEST1 = f8a_mb.path.topic_release_monitoring_pypi_get_listener("Aaa")
+    consumer = f8a_mb.MbConsumer([QUEUE_TEST1])
     statistics = {"foo": 0}
     while True:
         try:

@@ -16,9 +16,9 @@ from stomp.exception import StompException
 from typing import Callable, List
 from queue import Queue
 
-from mb.error import *
-from mb.config import *
-from mb.path import *
+from f8a_mb.error import *
+from f8a_mb.config import *
+from f8a_mb.path import *
 
 RAND_RANGE = 1000000
 

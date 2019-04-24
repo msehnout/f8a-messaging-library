@@ -11,7 +11,7 @@ PAUSE_RANGE = int(os.environ.get('PAUSE_RANGE', '20'))
 logging.basicConfig(level=LOGLEVEL)
 
 while True:
-    QUEUE_TEST1 = mb.ConnectionPath(mb.MbChannelType.QUEUE, "Consumer.Aaa.VirtualTopic.test1")
+    QUEUE_TEST1 = mb.path.topic_release_monitoring_pypi_get_listener("Aaa")
     consumer = mb.MbConsumer([QUEUE_TEST1])
     statistics = {"foo": 0}
     while True:

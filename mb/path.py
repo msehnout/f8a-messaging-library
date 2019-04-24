@@ -3,6 +3,7 @@
 from enum import Enum
 
 from mb.error import *
+from mb.config import ENVIRONMENT
 
 
 class MbChannelType(Enum):
@@ -47,5 +48,15 @@ class ConnectionPath:
         return self.type, self.path
 
 
-TOPIC_RELEASE_MONITORING_PYPI = ConnectionPath(MbChannelType.TOPIC, "release-monitoring/pypi")
-TOPIC_RELEASE_MONITORING_NPM = ConnectionPath(MbChannelType.TOPIC, "release-monitoring/npm")
+TOPIC_RELEASE_MONITORING_PYPI = \
+    ConnectionPath(MbChannelType.TOPIC,
+                   "VirtualTopic.{}.release-monitoring.PyPI".format(ENVIRONMENT))
+TOPIC_RELEASE_MONITORING_NPM = \
+    ConnectionPath(MbChannelType.TOPIC,
+                   "VirtualTopic.{}.release-monitoring.NPM".format(ENVIRONMENT))
+
+
+def topic_release_monitoring_pypi_get_listener(name: str):
+    return ConnectionPath(MbChannelType.QUEUE,
+                          "Consumer.{}.VirtualTopic.{}.release-monitoring.PyPI"
+                          .format(name, ENVIRONMENT))

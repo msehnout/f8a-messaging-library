@@ -12,7 +12,7 @@ logging.basicConfig(level=LOGLEVEL)
 
 logging.info("starting")
 
-TOPIC_TEST1 = mb.ConnectionPath(mb.MbChannelType.TOPIC, "VirtualTopic.test1")
+TOPIC_TEST1 = mb.path.TOPIC_RELEASE_MONITORING_PYPI
 producer = mb.MbProducer(TOPIC_TEST1)
 counter = 0
 while True:

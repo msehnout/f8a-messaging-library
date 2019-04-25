@@ -85,12 +85,15 @@ class _StompListener(stomp.ConnectionListener):
     """Implements listener needed to handle stomp events."""
 
     def __init__(self, queue):
+        """Create listener."""
         self.queue = queue
 
     def on_error(self, headers, message):
+        """Do this in case of an error (callback)."""
         logger.error('received an error "%s"' % message)
 
     def on_message(self, headers, message):
+        """Do this in case of a new message (callback)."""
         self.queue.put((headers, message))
 
 
@@ -196,9 +199,11 @@ class _StompRpcCallee(stomp.ConnectionListener):
         self.cb = cb
 
     def on_error(self, headers, message):
+        """Do this in case of an error (callback)."""
         logger.error('received an error "%s"' % message)
 
     def on_message(self, headers, message):
+        """Do this in case of a new message (callback)."""
         ret = self.cb(message)
         try:
             self.connection.send(body=ret, destination=headers['reply-to'])

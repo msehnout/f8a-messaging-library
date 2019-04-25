@@ -144,7 +144,7 @@ def test_topic_redelivery():
         consumer = create_consumer()
         while True:
             msg = consumer.next_message()
-            consumer.ack_message(msg.id)
+            consumer.ack_message(msg)
 
     def consume_half_of_the_messages():
         consumer = create_consumer()
@@ -152,7 +152,7 @@ def test_topic_redelivery():
         for i in range(0, 5):
             msg = consumer.next_message()
             assert str(i) == msg.content
-            consumer.ack_message(msg.id)
+            consumer.ack_message(msg)
 
         for i in range(5, 10):
             msg = consumer.next_message()
@@ -167,7 +167,7 @@ def test_topic_redelivery():
         for i in range(5, 10):
             msg = consumer.next_message()
             assert str(i) == msg.content
-            consumer.ack_message(msg.id)
+            consumer.ack_message(msg)
 
     p = multiprocessing.Process(target=cleanup_subscription)
     p.start()
